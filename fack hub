@@ -1,73 +1,115 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-local Window = OrionLib:MakeWindow({Name = "Fack Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "Fack Hub"})
+local Window = OrionLib:MakeWindow({
+    Name = "Fack Hub", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "Fack Hub"
+})
+
+local bTab = Window:MakeTab({
+    Name = "auto farm",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local Section = bTab:AddSection({
+    Name = "aimbot"
+})
+
+local isHitboxEnabled = false  -- ตัวแปรสำหรับติดตามสถานะเปิด/ปิดของ Hitbox
+
+-- ฟังก์ชันปรับขนาด Hitbox ของผู้เล่น
+local function applyHitbox(sizeX, sizeY, sizeZ)
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character then
+            local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart")
+            humanoidRootPart.Size = Vector3.new(sizeX, sizeY, sizeZ)
+            humanoidRootPart.Transparency = 0.5
+            humanoidRootPart.CanCollide = true
+            humanoidRootPart.Massless = false
+        end
+    end
+end
+
+-- สร้าง Toggle สำหรับเปิด/ปิดการปรับขนาด Hitbox
+bTab:AddToggle({
+    Name = "Toggle Hitbox",
+    Default = false,
+    Callback = function(Value)
+        isHitboxEnabled = Value  -- อัปเดตสถานะของ Toggle
+
+        if isHitboxEnabled then
+            -- หาก Toggle เปิดอยู่
+            applyHitbox(20, 20, 20)  -- ปรับขนาด Hitbox
+        else
+            -- หาก Toggle ปิดอยู่ (สามารถคืนค่า Hitbox เป็นค่าดั้งเดิมได้หากต้องการ)
+            applyHitbox(2, 2, 1)  -- ตัวอย่าง: คืนค่า Hitbox กลับเป็นขนาดดั้งเดิม
+        end
+    end    
+})
 
 local aTab = Window:MakeTab({
-	Name = "ESP",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
+    Name = "ESP",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
 })
 
 local Section = aTab:AddSection({
-	Name = "ESP"
+    Name = "ESP"
 })
 
-local highlightEnabled = false
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local highlightsEnabled = false
+local highlights = {}
+
+local function addHighlight(character)
+    if character.Parent ~= LocalPlayer then
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = character
+        highlight.FillTransparency = 1
+        highlight.OutlineColor = Color3.new(1, 0, 0)
+        table.insert(highlights, highlight)
+    end
+end
+
+local function espPlayers()
+    if highlightsEnabled then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                player.CharacterAdded:Connect(function(character)
+                    addHighlight(character)
+                end)
+
+                if player.Character then
+                    addHighlight(player.Character)
+                end
+            end
+        end
+
+        Players.PlayerAdded:Connect(function(player)
+            if player ~= LocalPlayer then
+                player.CharacterAdded:Connect(function(character)
+                    addHighlight(character)
+                end)
+            end
+        end)
+    else
+        for _, highlight in pairs(highlights) do
+            highlight:Destroy()
+        end
+        highlights = {}
+    end
+end
 
 aTab:AddToggle({
-	Name = "Toggle Highlight",
-	Default = false,
-	Callback = function(Value)
-		highlightEnabled = Value -- เก็บค่าสถานะเปิด/ปิด
-		if highlightEnabled then
-			EnableHighlight() -- เรียกฟังก์ชันเพื่อเปิด Highlight
-		else
-			DisableHighlight() -- เรียกฟังก์ชันเพื่อปิด Highlight
-		end
-	end    
+    Name = "Toggle ESP",
+    Default = false,
+    Callback = function(Value)
+        highlightsEnabled = Value
+        espPlayers()
+    end    
 })
-
--- ฟังก์ชันเปิด Highlight
-function EnableHighlight()
-    local Players = game:GetService("Players")
-    local localPlayer = Players.LocalPlayer
-
-    local function addHighlightToCharacter(character)
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            local highlight = Instance.new("Highlight")
-            highlight.Adornee = character
-            highlight.FillTransparency = 1
-            highlight.OutlineColor = Color3.new(1, 0, 0)
-            highlight.Name = "ToggleHighlight" -- ตั้งชื่อเพื่อให้ค้นหาง่ายตอนปิด
-            highlight.Parent = character.HumanoidRootPart
-        end
-    end
-
-    -- Loop เพิ่ม Highlight ให้ผู้เล่นคนอื่น
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= localPlayer then
-            player.CharacterAdded:Connect(function(character)
-                addHighlightToCharacter(character)
-            end)
-
-            if player.Character then
-                addHighlightToCharacter(player.Character)
-            end
-        end
-    end
-end
-
--- ฟังก์ชันปิด Highlight
-function DisableHighlight()
-    local Players = game:GetService("Players")
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local highlight = player.Character.HumanoidRootPart:FindFirstChild("ToggleHighlight")
-            if highlight then
-                highlight:Destroy() -- ลบ Highlight เมื่อปิด
-            end
-        end
-    end
-end
 
 OrionLib:Init()
