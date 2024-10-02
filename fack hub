@@ -1,1 +1,73 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
+local Window = OrionLib:MakeWindow({Name = "Fack Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "Fack Hub"})
+
+local aTab = Window:MakeTab({
+	Name = "ESP",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+local Section = aTab:AddSection({
+	Name = "ESP"
+})
+
+local highlightEnabled = false
+
+aTab:AddToggle({
+	Name = "Toggle Highlight",
+	Default = false,
+	Callback = function(Value)
+		highlightEnabled = Value -- เก็บค่าสถานะเปิด/ปิด
+		if highlightEnabled then
+			EnableHighlight() -- เรียกฟังก์ชันเพื่อเปิด Highlight
+		else
+			DisableHighlight() -- เรียกฟังก์ชันเพื่อปิด Highlight
+		end
+	end    
+})
+
+-- ฟังก์ชันเปิด Highlight
+function EnableHighlight()
+    local Players = game:GetService("Players")
+    local localPlayer = Players.LocalPlayer
+
+    local function addHighlightToCharacter(character)
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local highlight = Instance.new("Highlight")
+            highlight.Adornee = character
+            highlight.FillTransparency = 1
+            highlight.OutlineColor = Color3.new(1, 0, 0)
+            highlight.Name = "ToggleHighlight" -- ตั้งชื่อเพื่อให้ค้นหาง่ายตอนปิด
+            highlight.Parent = character.HumanoidRootPart
+        end
+    end
+
+    -- Loop เพิ่ม Highlight ให้ผู้เล่นคนอื่น
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer then
+            player.CharacterAdded:Connect(function(character)
+                addHighlightToCharacter(character)
+            end)
+
+            if player.Character then
+                addHighlightToCharacter(player.Character)
+            end
+        end
+    end
+end
+
+-- ฟังก์ชันปิด Highlight
+function DisableHighlight()
+    local Players = game:GetService("Players")
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local highlight = player.Character.HumanoidRootPart:FindFirstChild("ToggleHighlight")
+            if highlight then
+                highlight:Destroy() -- ลบ Highlight เมื่อปิด
+            end
+        end
+    end
+end
+
+OrionLib:Init()
