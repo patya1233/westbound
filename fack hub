@@ -20,21 +20,25 @@ local Section = bTab:AddSection({
 local localPlayer = game.Players.LocalPlayer  -- ผู้เล่นที่ใช้งาน
 local isHitboxEnabled = false  -- ตัวแปรสำหรับติดตามสถานะเปิด/ปิดของ Hitbox
 
--- ฟังก์ชันปรับขนาด Hitbox ของผู้เล่นทุกคน ยกเว้นตัวผู้ใช้
+-- ฟังก์ชันสำหรับปรับขนาดและตั้งค่า Hitbox ของผู้เล่นทุกคน ยกเว้นตัวผู้ใช้
 local function applyHitbox(sizeX, sizeY, sizeZ)
     for _, player in pairs(game.Players:GetPlayers()) do
         if player ~= localPlayer and player.Character then  -- ตรวจสอบว่าไม่ใช่ผู้เล่นที่ใช้งาน
             local humanoidRootPart = player.Character:WaitForChild("HumanoidRootPart")
+            
+            -- ปรับขนาด Hitbox
             humanoidRootPart.Size = Vector3.new(sizeX, sizeY, sizeZ)
-            humanoidRootPart.Transparency = 0.5
-            humanoidRootPart.CanCollide = false  -- ทำให้ทะลุผ่านทุกอย่างได้
-            humanoidRootPart.Massless = true     -- ลดน้ำหนักให้ไม่มีผลฟิสิกส์
+            humanoidRootPart.Transparency = 0.5  -- โปร่งใส
+
+            -- ตั้งค่า CollisionGroup ให้ HumanoidRootPart ไม่ชนกับสิ่งอื่นๆ
+            local physicsService = game:GetService("PhysicsService")
+            physicsService:SetPartCollisionGroup(humanoidRootPart, "NoCollideGroup")
         end
     end
 end
 
 -- สร้าง Toggle สำหรับเปิด/ปิดการปรับขนาด Hitbox
-Tab:AddToggle({
+bTab:AddToggle({
     Name = "Toggle Hitbox",
     Default = false,
     Callback = function(Value)
@@ -42,13 +46,20 @@ Tab:AddToggle({
 
         if isHitboxEnabled then
             -- หาก Toggle เปิดอยู่
-            applyHitbox(20, 20, 20)  -- ปรับขนาด Hitbox
+            applyHitbox(5, 10, 3)  -- ปรับขนาด Hitbox
         else
             -- หาก Toggle ปิดอยู่ (สามารถคืนค่า Hitbox เป็นค่าดั้งเดิมได้หากต้องการ)
             applyHitbox(2, 2, 1)  -- ตัวอย่าง: คืนค่า Hitbox กลับเป็นขนาดดั้งเดิม
         end
     end    
 })
+
+-- สร้างกลุ่มสำหรับไม่ให้ชนกัน (NoCollideGroup)
+local physicsService = game:GetService("PhysicsService")
+if not physicsService:CollisionGroupExists("NoCollideGroup") then
+    physicsService:CreateCollisionGroup("NoCollideGroup")
+    physicsService:CollisionGroupSetCollidable("NoCollideGroup", "NoCollideGroup", false)
+end
 
 local aTab = Window:MakeTab({
     Name = "ESP",
